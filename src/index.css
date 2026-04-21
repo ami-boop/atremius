@@ -1,0 +1,113 @@
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --font-manrope: 'Manrope', sans-serif;
+    --font-inter: 'Inter', sans-serif;
+
+    --background: 0 0% 7.5%;
+    --foreground: 0 0% 90%;
+    --card: 0 0% 12.5%;
+    --card-foreground: 0 0% 90%;
+    --popover: 0 0% 12.5%;
+    --popover-foreground: 0 0% 90%;
+    --primary: 138 65% 66%;
+    --primary-foreground: 138 65% 10%;
+    --secondary: 40 100% 83%;
+    --secondary-foreground: 40 60% 12%;
+    --muted: 0 0% 16%;
+    --muted-foreground: 0 0% 55%;
+    --accent: 18 100% 83%;
+    --accent-foreground: 18 60% 12%;
+    --destructive: 0 62% 50%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 140 10% 18%;
+    --input: 0 0% 16%;
+    --ring: 138 65% 66%;
+    --chart-1: 138 65% 66%;
+    --chart-2: 40 100% 83%;
+    --chart-3: 18 100% 83%;
+    --chart-4: 0 0% 40%;
+    --chart-5: 138 40% 40%;
+    --radius: 0.75rem;
+
+    --surface: #131313;
+    --surface-container: #201f1f;
+    --surface-container-high: #2a2a2a;
+    --surface-container-highest: #353535;
+    --surface-container-low: #1a1a1a;
+    --emerald: #6ee591;
+    --amber: #ffe2ab;
+    --coral: #ffbea9;
+    --ghost-border: rgba(62, 74, 63, 0.15);
+
+    --sidebar-background: 0 0% 7.5%;
+    --sidebar-foreground: 0 0% 90%;
+    --sidebar-primary: 138 65% 66%;
+    --sidebar-primary-foreground: 138 65% 10%;
+    --sidebar-accent: 0 0% 16%;
+    --sidebar-accent-foreground: 0 0% 90%;
+    --sidebar-border: 140 10% 18%;
+    --sidebar-ring: 138 65% 66%;
+  }
+
+  .dark {
+    --background: 0 0% 7.5%;
+    --foreground: 0 0% 90%;
+    --card: 0 0% 12.5%;
+    --card-foreground: 0 0% 90%;
+    --popover: 0 0% 12.5%;
+    --popover-foreground: 0 0% 90%;
+    --primary: 138 65% 66%;
+    --primary-foreground: 138 65% 10%;
+    --secondary: 40 100% 83%;
+    --secondary-foreground: 40 60% 12%;
+    --muted: 0 0% 16%;
+    --muted-foreground: 0 0% 55%;
+    --accent: 18 100% 83%;
+    --accent-foreground: 18 60% 12%;
+    --destructive: 0 62% 50%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 140 10% 18%;
+    --input: 0 0% 16%;
+    --ring: 138 65% 66%;
+    --chart-1: 138 65% 66%;
+    --chart-2: 40 100% 83%;
+    --chart-3: 18 100% 83%;
+    --chart-4: 0 0% 40%;
+    --chart-5: 138 40% 40%;
+    --sidebar-background: 0 0% 7.5%;
+    --sidebar-foreground: 0 0% 90%;
+    --sidebar-primary: 138 65% 66%;
+    --sidebar-primary-foreground: 138 65% 10%;
+    --sidebar-accent: 0 0% 16%;
+    --sidebar-accent-foreground: 0 0% 90%;
+    --sidebar-border: 140 10% 18%;
+    --sidebar-ring: 138 65% 66%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: var(--surface);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--surface-container-highest);
+  border-radius: 3px;
+}
