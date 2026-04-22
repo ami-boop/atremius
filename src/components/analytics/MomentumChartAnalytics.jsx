@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useMode } from '@/lib/ModeContext';
 import { DEFAULT_MOMENTUM_CHART_ANALYTICS } from '@/lib/mocks';

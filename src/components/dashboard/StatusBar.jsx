@@ -1,4 +1,3 @@
-import React from 'react';
 import { motion } from 'framer-motion';
 import { useMode } from '@/lib/ModeContext';
 import { MODES as modes } from '@/config/mode';

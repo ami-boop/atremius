@@ -1,11 +1,11 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { useMode } from '@/lib/ModeContext';
 import { CloudSun, Loader2 } from 'lucide-react';
 import { DEFAULT_FORECAST } from '@/lib/mocks';
 import { fetchWeatherForecast, resolveWeatherLocation } from '@/api/weather';
 import { DAY_LABELS} from '@/constants'
-import { modeLabelsShort } from '@/config/mode'
+import { modeLabelsShort, modeColors} from '@/config/mode'
 
 const nextDays = () => {
   const days = DAY_LABELS

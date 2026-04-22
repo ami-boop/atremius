@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { modeColors, modeLabelsShort } from '@/config/mode';
 import { CHART_HEIGHT } from '@/constants';

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Plus, ChevronDown, ChevronRight, Check, GripVertical, Clock, Pencil, Trash2 } from 'lucide-react';
 import { motion, AnimatePresence, Reorder, useDragControls } from 'framer-motion';
 import { useMode } from '@/lib/ModeContext';

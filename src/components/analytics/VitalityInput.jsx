@@ -1,7 +1,8 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useMode } from '@/lib/ModeContext';
 import { MessageSquare } from 'lucide-react';
+import { metricDefs } from '../../config/metrics';
 import { DEFAULT_VITALITY, DEFAULT_VITALITY_COMMENTS } from '@/lib/mocks';
 
 function CommentModal({ metricLabel, comment, color, onSave, onClose }) {
