@@ -6,12 +6,13 @@ import { useMode } from '@/lib/ModeContext';
 export default function CircadianAnchor() {
   const [timeLeft, setTimeLeft] = useState({ hours: 0, minutes: 0, seconds: 0 });
   const targetHour = 23;
+  const targetMinute = 30;
 
   useEffect(() => {
     const calcTime = () => {
       const now = new Date();
       const target = new Date();
-      target.setHours(targetHour, 0, 0, 0);
+      target.setHours(targetHour, targetMinute, 0, 0);
       if (target <= now) target.setDate(target.getDate() + 1);
       const diff = target.getTime() - now.getTime();
       setTimeLeft({
@@ -23,7 +24,7 @@ export default function CircadianAnchor() {
     calcTime();
     const timer = setInterval(calcTime, 1000);
     return () => clearInterval(timer);
-  }, []);
+  }, [targetHour, targetMinute]);
 
   const { modeColor } = useMode();
   const pad = (n) => String(n).padStart(2, '0');
@@ -47,7 +48,7 @@ export default function CircadianAnchor() {
           {pad(timeLeft.hours)}:{pad(timeLeft.minutes)}:{pad(timeLeft.seconds)}
         </p>
         <p className="text-[10px] font-inter text-muted-foreground tracking-[0.15em] uppercase mt-2">
-          До целевого сна (23:00)
+          До целевого сна (23:30)
         </p>
       </div>
 

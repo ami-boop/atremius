@@ -10,7 +10,7 @@ import BottomNav from '../components/dashboard/BottomNav';
 import AnalyticsTab from '../components/analytics/AnalyticsTab';
 import { db } from '@/api/firebase';
 import { useMode } from '@/lib/ModeContext';
-import { DEFAULT_PROFILE, createDefaultDay, mergeDayWithDefaults } from '@/lib/mocks';
+import { DEFAULT_HABITS, DEFAULT_PROFILE, createDefaultDay, mergeDayWithDefaults } from '@/lib/mocks';
 import { buildMomentumChartAnalytics } from '@/lib/analytics';
 import { getTodayDateKey } from '@/lib/dateUtils';
 
@@ -41,23 +41,28 @@ export default function Dashboard() {
       try {
         const profileRef = doc(db, 'profile', 'app');
         const profileSnap = await getDoc(profileRef);
+        const profileData = profileSnap.data();
+        const profileHasHabits = Array.isArray(profileData?.habits);
         const baseProfile = profileSnap.exists()
-          ? { ...DEFAULT_PROFILE, ...profileSnap.data() }
+          ? { ...DEFAULT_PROFILE, ...profileData }
           : DEFAULT_PROFILE;
 
         const todayDateKey = getTodayDateKey(baseProfile.timezone || DEFAULT_PROFILE.timezone);
+        const dayRef = doc(db, 'days', todayDateKey);
+        const daySnap = await getDoc(dayRef);
+        const migratedHabits = profileHasHabits
+          ? profileData.habits
+          : daySnap.data()?.habits ?? DEFAULT_HABITS;
         const nextProfile = {
           ...baseProfile,
           activeDate: todayDateKey,
+          habits: migratedHabits,
           updatedAt: new Date().toISOString(),
         };
 
-        if (!profileSnap.exists() || profileSnap.data()?.activeDate !== todayDateKey) {
+        if (!profileSnap.exists() || profileData?.activeDate !== todayDateKey || !profileHasHabits) {
           await setDoc(profileRef, nextProfile, { merge: true });
         }
-
-        const dayRef = doc(db, 'days', todayDateKey);
-        const daySnap = await getDoc(dayRef);
         const nextDay = daySnap.exists()
           ? mergeDayWithDefaults(daySnap.data(), todayDateKey)
           : createDefaultDay(todayDateKey);
@@ -70,7 +75,7 @@ export default function Dashboard() {
           collection(db, 'days'),
           where('date', '<=', todayDateKey),
           orderBy('date', 'desc'),
-          limit(7),
+          limit(40),
         );
         const recentDaysSnap = await getDocs(daysQuery);
 
@@ -96,6 +101,23 @@ export default function Dashboard() {
 
     void loadData();
   }, [setMode]);
+
+  const persistProfilePatch = async (patch) => {
+    const updatedAt = new Date().toISOString();
+    const nextProfile = {
+      ...profile,
+      ...patch,
+      updatedAt,
+    };
+
+    setProfile(nextProfile);
+
+    try {
+      await setDoc(doc(db, 'profile', 'app'), { ...patch, updatedAt }, { merge: true });
+    } catch (error) {
+      console.error('Failed to persist Firestore profile patch', error);
+    }
+  };
 
   const persistDayPatch = async (targetDateKey, patch) => {
     const updatedAt = new Date().toISOString();
@@ -191,7 +213,7 @@ export default function Dashboard() {
                     />
                   </div>
                   <div className="lg:col-span-5">
-                    <HabitsTracker habits={dayData.habits} onChange={(habits) => void persistDayPatch(dateKey, { habits })} />
+                    <HabitsTracker habits={profile.habits} onChange={(habits) => void persistProfilePatch({ habits })} />
                   </div>
                 </div>
               </div>
@@ -209,6 +231,10 @@ export default function Dashboard() {
                 onMomentumChartAnalyticsValueChange={handleMomentumChartValueChange}
                 forecast={dayData.forecast}
                 onForecastChange={(forecast) => void persistDayPatch(dateKey, { forecast })}
+                daysByDate={daysByDate}
+                currentDateKey={dateKey}
+                profile={profile}
+                onProfileChange={persistProfilePatch}
               />
             </div>
           </div>

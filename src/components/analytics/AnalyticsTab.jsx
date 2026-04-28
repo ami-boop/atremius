@@ -15,6 +15,10 @@ export default function AnalyticsTab({
   onMomentumChartAnalyticsValueChange,
   forecast,
   onForecastChange,
+  daysByDate,
+  currentDateKey,
+  profile,
+  onProfileChange,
 }) {
   return (
     <motion.div
@@ -24,7 +28,12 @@ export default function AnalyticsTab({
       className="space-y-4"
     >
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <PhysiologicalStatus pointState={physiology} onChange={onPhysiologyChange} />
+        <PhysiologicalStatus
+          pointState={physiology}
+          onChange={onPhysiologyChange}
+          daysByDate={daysByDate}
+          currentDateKey={currentDateKey}
+        />
         <VitalityInput
           values={vitality}
           comments={vitalityComments}
@@ -33,7 +42,14 @@ export default function AnalyticsTab({
         />
       </div>
       <MomentumChartAnalytics data={momentumChartAnalytics} onValueChange={onMomentumChartAnalyticsValueChange} />
-      <ForecastChart forecast={forecast} onChange={onForecastChange} />
+      <ForecastChart
+        forecast={forecast}
+        onChange={onForecastChange}
+        daysByDate={daysByDate}
+        currentDateKey={currentDateKey}
+        profile={profile}
+        onProfileChange={onProfileChange}
+      />
     </motion.div>
   );
 }

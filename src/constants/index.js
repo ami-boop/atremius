@@ -9,12 +9,12 @@ const DAY_LABELS = ["ВС", "ПН", "ВТ", "СР", "ЧТ", "ПТ", "СБ"]
 
 const CHART_HEIGHT = 120; // px — fixed so proportions are exact
 
-const DURATIONS = ['15','20','25','30','45','60','90','120'];
+const DURATIONS = ['15','20','25','30','45','60','90','120', '150', '180', '210', '240', '300'];
 
 const MODE_LIMITS = {
-  'ПРОДУКТИВНОСТЬ': { maxBlocks: 3, maxDuration: null },
-  'СТАБИЛЬНО':              { maxBlocks: 2, maxDuration: null },
-  'ВОССТАНОВЛЕНИЕ':         { maxBlocks: 1, maxDuration: 30 },
+  'ПРОДУКТИВНОСТЬ': { maxBlocks: 4, maxDuration: null },
+  'СТАБИЛЬНО':              { maxBlocks: 3, maxDuration: null },
+  'ВОССТАНОВЛЕНИЕ':         { maxBlocks: 2, maxDuration: 30 },
 };
 
 const TIMES = (() => {

@@ -15,6 +15,13 @@ const profile = {
   timezone: "Europe/Saratov",
   locale: "ru",
   defaultMode: "СТАБИЛЬНО",
+  habits: [
+    { id: 1, name: "Выпить 2л воды", done: false, emoji: "💧" },
+    { id: 2, name: "Утренняя зарядка 10 мин", done: true, emoji: "🏃" },
+    { id: 3, name: "Медитация 5 мин", done: false, emoji: "🧘" },
+    { id: 4, name: "Прогулка на улице", done: true, emoji: "🌿" },
+    { id: 5, name: "Без телефона до 9:00", done: false, emoji: "📵" },
+  ],
   strategicGoalTemplate: "Редизайн архитектуры дизайн-системы",
   circadianAnchorTime: "23:30",
   wakeTimeTarget: "08:00",
@@ -66,13 +73,6 @@ const day = {
       duration: "45",
       subtasks: [{ id: 1, text: "Написать таблицу токенов", done: false }],
     },
-  ],
-  habits: [
-    { id: 1, name: "Выпить 2л воды", done: false, emoji: "💧" },
-    { id: 2, name: "Утренняя зарядка 10 мин", done: true, emoji: "🏃" },
-    { id: 3, name: "Медитация 5 мин", done: false, emoji: "🧘" },
-    { id: 4, name: "Прогулка на улице", done: true, emoji: "🌿" },
-    { id: 5, name: "Без телефона до 9:00", done: false, emoji: "📵" },
   ],
   vitality: {
     sleep: 7,

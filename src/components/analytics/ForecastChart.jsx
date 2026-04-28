@@ -1,9 +1,10 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import { useMode } from '@/lib/ModeContext';
 import { CloudSun, Loader2 } from 'lucide-react';
 import { DEFAULT_FORECAST } from '@/lib/mocks';
 import { fetchWeatherForecast, resolveWeatherLocation } from '@/api/weather';
+import { buildProductivityForecast } from '@/lib/forecastEngine';
 import { DAY_LABELS} from '@/constants'
 import { modeLabelsShort, modeColors} from '@/config/mode'
 
@@ -20,24 +21,50 @@ const nextDays = () => {
 };
 
 
-export default function ForecastChart({ forecast: externalForecast, onChange }) {
+export default function ForecastChart({
+  forecast: externalForecast,
+  onChange,
+  daysByDate,
+  currentDateKey,
+  profile,
+  onProfileChange,
+}) {
   const { modeColor } = useMode();
   const [loading, setLoading] = useState(false);
   const [forecast, setForecast] = useState(externalForecast ?? DEFAULT_FORECAST);
   const [hasAutoLoaded, setHasAutoLoaded] = useState(false);
   const days = nextDays();
+  const weatherLocationOptions = useMemo(
+    () => [
+      { id: 'auto', name: 'Текущая геолокация' },
+      ...(profile?.weatherLocations ?? []),
+    ],
+    [profile?.weatherLocations],
+  );
+  const selectedWeatherLocation = profile?.selectedWeatherLocation ?? 'auto';
 
   useEffect(() => {
     setForecast(externalForecast ?? DEFAULT_FORECAST);
   }, [externalForecast]);
 
+  useEffect(() => {
+    setHasAutoLoaded(false);
+  }, [currentDateKey, selectedWeatherLocation]);
+
   const loadForecast = async () => {
     setLoading(true);
     try {
-      const location = await resolveWeatherLocation();
-      const res = await fetchWeatherForecast(location);
-      setForecast(res);
-      onChange?.(res);
+      const location = await resolveWeatherLocation(profile);
+      const weatherForecast = await fetchWeatherForecast(location);
+      const nextForecast = buildProductivityForecast({
+        daysByDate,
+        currentDateKey,
+        weatherForecast,
+        location,
+      });
+
+      setForecast(nextForecast);
+      onChange?.(nextForecast);
     } finally {
       setLoading(false);
     }
@@ -48,15 +75,19 @@ export default function ForecastChart({ forecast: externalForecast, onChange }) 
 
     const generatedAt = forecast?.generatedAt ? new Date(forecast.generatedAt) : null;
     const isFreshToday = generatedAt ? generatedAt.toDateString() === new Date().toDateString() : false;
+    const locationMatchesSelection =
+      selectedWeatherLocation === 'auto'
+        ? forecast?.location?.source === 'geolocation'
+        : forecast?.location?.id === selectedWeatherLocation;
 
-    if (forecast?.source === 'open-meteo' && isFreshToday) {
+    if (isFreshToday && locationMatchesSelection) {
       setHasAutoLoaded(true);
       return;
     }
 
     setHasAutoLoaded(true);
     void loadForecast();
-  }, [forecast, hasAutoLoaded]);
+  }, [currentDateKey, daysByDate, forecast, hasAutoLoaded, selectedWeatherLocation]);
 
   const weatherIcon = (type) => {
     const t = (type || '').toLowerCase();
@@ -76,24 +107,43 @@ export default function ForecastChart({ forecast: externalForecast, onChange }) 
       transition={{ duration: 0.5, delay: 0.4 }}
       className="bg-[var(--surface-container)] rounded-xl p-6 transition-all duration-500"
     >
-      <div className="flex items-center justify-between mb-3">
-        <span className="text-[10px] font-inter font-semibold tracking-[0.2em] uppercase text-muted-foreground">
-          Прогноз на 7 дней
-        </span>
-        <button
-          onClick={loadForecast}
-          disabled={loading}
-          className="flex items-center gap-1.5 px-3 py-1 rounded-lg text-[10px] font-inter text-muted-foreground hover:text-foreground bg-[var(--surface-container-high)] hover:bg-[var(--surface-container-highest)] transition-colors"
-        >
-          {loading ? <Loader2 className="w-3 h-3 animate-spin" /> : <CloudSun className="w-3 h-3" />}
-          Обновить
-        </button>
+      <div className="flex items-start justify-between gap-3 mb-3 flex-wrap">
+        <div>
+          <span className="text-[10px] font-inter font-semibold tracking-[0.2em] uppercase text-muted-foreground">
+            Прогноз производительности на 7 дней
+          </span>
+        </div>
+        <div className="flex items-center gap-2 flex-wrap justify-end">
+          <select
+            value={selectedWeatherLocation}
+            onChange={(event) => {
+              const nextLocationId = event.target.value;
+              onProfileChange?.({ selectedWeatherLocation: nextLocationId });
+              setHasAutoLoaded(false);
+            }}
+            className="bg-[var(--surface-container-high)] rounded-lg px-3 py-1.5 text-[10px] font-inter text-foreground outline-none"
+          >
+            {weatherLocationOptions.map((option) => (
+              <option key={option.id} value={option.id}>
+                {option.name}
+              </option>
+            ))}
+          </select>
+          <button
+            onClick={loadForecast}
+            disabled={loading}
+            className="flex items-center gap-1.5 px-3 py-1 rounded-lg text-[10px] font-inter text-muted-foreground hover:text-foreground bg-[var(--surface-container-high)] hover:bg-[var(--surface-container-highest)] transition-colors"
+          >
+            {loading ? <Loader2 className="w-3 h-3 animate-spin" /> : <CloudSun className="w-3 h-3" />}
+            Обновить
+          </button>
+        </div>
       </div>
 
       {loading && (
         <div className="flex items-center justify-center py-12 text-muted-foreground">
           <Loader2 className="w-5 h-5 animate-spin mr-2" />
-          <span className="text-xs font-inter">Анализируем данные...</span>
+          <span className="text-xs font-inter">Рассчитываем прогноз...</span>
         </div>
       )}
 
@@ -120,6 +170,7 @@ export default function ForecastChart({ forecast: externalForecast, onChange }) 
                     transition={{ duration: 0.6, delay: i * 0.07, ease: 'easeOut' }}
                     className="w-full rounded-t-md min-h-[4px]"
                     style={{ background: barCol, opacity: 0.75 }}
+                    title={day.recommendation}
                   />
                 </div>
               );
@@ -157,8 +208,23 @@ export default function ForecastChart({ forecast: externalForecast, onChange }) 
             ))}
           </div>
 
+          {forecast.recommendations?.length > 0 && (
+            <div className="mt-4 bg-[var(--surface-container-low)] rounded-lg px-3 py-3">
+              <p className="text-[10px] font-inter font-semibold tracking-[0.18em] uppercase text-muted-foreground mb-2">
+                Рекомендации недели
+              </p>
+              <div className="space-y-1.5">
+                {forecast.recommendations.map((item) => (
+                  <p key={item} className="text-[11px] font-inter text-muted-foreground leading-relaxed">
+                    • {item}
+                  </p>
+                ))}
+              </div>
+            </div>
+          )}
+
           <p className="text-[9px] font-inter text-muted-foreground/40 mt-3">
-            * Погода получена из Open-Meteo, режим и фокус рассчитаны локально
+            * Погода получена из Open-Meteo, производительность и режим рассчитаны локальным алгоритмом по истории 7 и 30–40 дней
           </p>
         </>
       )}

@@ -1,8 +1,34 @@
+import { allBodyPointIds } from '@/config/metrics';
+
 export const DEFAULT_PROFILE = {
   activeDate: "2026-04-19",
   timezone: "Europe/Saratov",
   locale: "ru",
   defaultMode: "СТАБИЛЬНО",
+  selectedWeatherLocation: "auto",
+  weatherLocations: [
+    {
+      id: "kfar-tavor",
+      name: "Kfar Tavor, Israel",
+      latitude: 32.6876,
+      longitude: 35.4214,
+      timezone: "Asia/Jerusalem",
+    },
+    {
+      id: "saratov",
+      name: "Saratov, Russia",
+      latitude: 51.5336,
+      longitude: 46.0343,
+      timezone: "Europe/Saratov",
+    },
+  ],
+  habits: [
+    { id: 1, name: "Выпить 2л воды", done: false, emoji: "💧" },
+    { id: 2, name: "Утренняя зарядка 10 мин", done: true, emoji: "🏃" },
+    { id: 3, name: "Медитация 5 мин", done: false, emoji: "🧘" },
+    { id: 4, name: "Прогулка на улице", done: true, emoji: "🌿" },
+    { id: 5, name: "Без телефона до 9:00", done: false, emoji: "📵" },
+  ],
   strategicGoalTemplate: "Редизайн архитектуры дизайн-системы",
   circadianAnchorTime: "23:30",
   wakeTimeTarget: "08:00",
@@ -42,13 +68,7 @@ export const DEFAULT_FOCUS_BLOCKS = [
   },
 ];
 
-export const DEFAULT_HABITS = [
-  { id: 1, name: "Выпить 2л воды", done: false, emoji: "💧" },
-  { id: 2, name: "Утренняя зарядка 10 мин", done: true, emoji: "🏃" },
-  { id: 3, name: "Медитация 5 мин", done: false, emoji: "🧘" },
-  { id: 4, name: "Прогулка на улице", done: true, emoji: "🌿" },
-  { id: 5, name: "Без телефона до 9:00", done: false, emoji: "📵" },
-];
+export const DEFAULT_HABITS = DEFAULT_PROFILE.habits;
 
 export const DEFAULT_VITALITY = {
   sleep: 7,
@@ -66,22 +86,7 @@ export const DEFAULT_VITALITY_COMMENTS = {
   social: "",
 };
 
-export const PHYSIOLOGY_POINT_IDS = [
-  "head",
-  "neck",
-  "shoulder_l",
-  "shoulder_r",
-  "elbow_l",
-  "elbow_r",
-  "wrist_l",
-  "wrist_r",
-  "chest",
-  "belly",
-  "knee_l",
-  "knee_r",
-  "foot_l",
-  "foot_r",
-];
+export const PHYSIOLOGY_POINT_IDS = allBodyPointIds;
 
 export const DEFAULT_PHYSIOLOGY = Object.fromEntries(
   PHYSIOLOGY_POINT_IDS.map((pointId) => [pointId, { status: null, comment: "" }]),
@@ -129,15 +134,19 @@ export const DEFAULT_MOMENTUM_CHART_ANALYTICS = {
 
 export const DEFAULT_FORECAST = {
   days: [
-    { focus_score: 62, work_mode: "СТАБИЛЬНО", weather_temp: 14, weather_type: "облачно" },
-    { focus_score: 74, work_mode: "ПРОДУКТИВНОСТЬ", weather_temp: 16, weather_type: "солнечно" },
-    { focus_score: 81, work_mode: "ПРОДУКТИВНОСТЬ", weather_temp: 18, weather_type: "солнечно" },
-    { focus_score: 69, work_mode: "СТАБИЛЬНО", weather_temp: 15, weather_type: "переменная облачность" },
-    { focus_score: 53, work_mode: "СТАБИЛЬНО", weather_temp: 13, weather_type: "дождь" },
-    { focus_score: 39, work_mode: "ВОССТАНОВЛЕНИЕ", weather_temp: 12, weather_type: "дождь" },
-    { focus_score: 47, work_mode: "СТАБИЛЬНО", weather_temp: 13, weather_type: "облачно" },
+    { focus_score: 62, work_mode: "СТАБИЛЬНО", weather_temp: 14, weather_type: "облачно", recommendation: "Держи умеренный темп и оставь резерв на переключения." },
+    { focus_score: 74, work_mode: "ПРОДУКТИВНОСТЬ", weather_temp: 16, weather_type: "солнечно", recommendation: "Планируй сложные задачи на первую половину дня." },
+    { focus_score: 81, work_mode: "ПРОДУКТИВНОСТЬ", weather_temp: 18, weather_type: "солнечно", recommendation: "Используй ясную погоду как окно для глубокой работы." },
+    { focus_score: 69, work_mode: "СТАБИЛЬНО", weather_temp: 15, weather_type: "переменная облачность", recommendation: "Сохраняй ровный ритм без перегруза." },
+    { focus_score: 53, work_mode: "СТАБИЛЬНО", weather_temp: 13, weather_type: "дождь", recommendation: "Снизь плотность задач и добавь больше света и движения." },
+    { focus_score: 39, work_mode: "ВОССТАНОВЛЕНИЕ", weather_temp: 12, weather_type: "дождь", recommendation: "Сфокусируйся на восстановлении и рутинных задачах." },
+    { focus_score: 47, work_mode: "СТАБИЛЬНО", weather_temp: 13, weather_type: "облачно", recommendation: "Работай в умеренном темпе и не ставь слишком тяжёлый день." },
   ],
-  comment: "Локальный прогноз включен, потому что Base44 клиент не настроен через переменные окружения.",
+  recommendations: [
+    "Ставь сложные задачи на более ясные дни.",
+    "При падении сна и активности уменьши число тяжёлых блоков.",
+  ],
+  comment: "Прогноз производительности строится локальным алгоритмом по погоде и динамике последних дней.",
 };
 
 export function createDefaultDay(dateKey = DEFAULT_PROFILE.activeDate) {
@@ -146,7 +155,6 @@ export function createDefaultDay(dateKey = DEFAULT_PROFILE.activeDate) {
     mode: "ПРОДУКТИВНОСТЬ",
     strategicGoal: "Редизайн архитектуры дизайн-системы",
     focusBlocks: DEFAULT_FOCUS_BLOCKS,
-    habits: DEFAULT_HABITS,
     vitality: DEFAULT_VITALITY,
     vitalityComments: DEFAULT_VITALITY_COMMENTS,
     physiology: DEFAULT_PHYSIOLOGY,
@@ -165,7 +173,6 @@ export function mergeDayWithDefaults(dayData, dateKey = DEFAULT_PROFILE.activeDa
     ...defaults,
     ...dayData,
     focusBlocks: dayData?.focusBlocks ?? defaults.focusBlocks,
-    habits: dayData?.habits ?? defaults.habits,
     vitality: {
       ...defaults.vitality,
       ...dayData?.vitality,
