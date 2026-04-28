@@ -17,7 +17,20 @@ export function addDaysToDateKey(dateKey, days) {
   return formatDateKey(date);
 }
 
-export function getTodayDateKey(timezone = "Europe/Saratov") {
+export function getTodayDateKey(timezone = "Europe/Saratov", rolloverHour = 3) {
+  const hourFormatter = new Intl.DateTimeFormat("en-US", {
+    timeZone: timezone,
+    hour: "2-digit",
+    hour12: false,
+  });
+  const localHour = Number(hourFormatter.format(new Date()));
+  const baseDate = new Date();
+
+  // Before rollover hour we still treat the day as "yesterday".
+  if (localHour < rolloverHour) {
+    baseDate.setUTCDate(baseDate.getUTCDate() - 1);
+  }
+
   const formatter = new Intl.DateTimeFormat("en-CA", {
     timeZone: timezone,
     year: "numeric",
@@ -25,7 +38,7 @@ export function getTodayDateKey(timezone = "Europe/Saratov") {
     day: "2-digit",
   });
 
-  const parts = formatter.formatToParts(new Date());
+  const parts = formatter.formatToParts(baseDate);
   const year = parts.find((part) => part.type === "year")?.value;
   const month = parts.find((part) => part.type === "month")?.value;
   const day = parts.find((part) => part.type === "day")?.value;

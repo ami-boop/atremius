@@ -97,6 +97,7 @@ export default function PhysiologicalStatus({ pointState: externalPointState, on
   const [commentDraft, setCommentDraft] = useState('');
   const [hovered, setHovered] = useState(null);
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
+  const [activeMap, setActiveMap] = useState('joints');
   const bodyInsights = useMemo(
     () => buildBodyInsights(daysByDate ?? {}, currentDateKey, pointState),
     [currentDateKey, daysByDate, pointState],
@@ -163,6 +164,19 @@ export default function PhysiologicalStatus({ pointState: externalPointState, on
   };
 
   const hoveredPoint = hovered ? bodyPointMeta[hovered] : null;
+  const activeMapConfig = activeMap === 'joints'
+    ? { key: 'joints', title: 'Суставы', points: jointBodyPoints }
+    : { key: 'muscles', title: 'Мышцы', points: muscleBodyPoints };
+  const markCurrentMapAsOk = () => {
+    const nextState = { ...pointState };
+    activeMapConfig.points.forEach((point) => {
+      nextState[point.id] = {
+        ...(nextState[point.id] ?? { comment: '' }),
+        status: 'ok',
+      };
+    });
+    applyPointState(nextState);
+  };
 
   return (
     <motion.div
@@ -176,20 +190,38 @@ export default function PhysiologicalStatus({ pointState: externalPointState, on
         Физиологический статус
       </span>
 
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+      <div className="flex items-center gap-2 mb-4 flex-wrap">
+        <div className="flex items-center gap-1 bg-[var(--surface-container-low)] rounded-lg p-1 w-fit">
+          {[
+            { key: 'joints', label: 'Суставы' },
+            { key: 'muscles', label: 'Мышцы' },
+          ].map((tab) => (
+            <button
+              key={tab.key}
+              onClick={() => setActiveMap(tab.key)}
+              className={`px-3 py-1.5 rounded-md text-[10px] font-inter font-semibold tracking-[0.08em] transition-all ${
+                activeMap === tab.key
+                  ? 'bg-[var(--surface-container-highest)] text-foreground'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+        <button
+          onClick={markCurrentMapAsOk}
+          className="px-3 py-1.5 rounded-lg text-[10px] font-inter font-semibold tracking-[0.08em] bg-[var(--surface-container-low)] text-muted-foreground hover:text-foreground hover:bg-[var(--surface-container-high)] transition-colors"
+        >
+          Отметить все отлично
+        </button>
+      </div>
+
+      <div className="grid grid-cols-1 gap-4">
         <BodyMapSection
-          title="Суставы"
-          points={jointBodyPoints}
-          pointState={pointState}
-          getColor={getColor}
-          hovered={hovered}
-          setHovered={setHovered}
-          cycleStatus={cycleStatus}
-          openComment={openComment}
-        />
-        <BodyMapSection
-          title="Мышцы"
-          points={muscleBodyPoints}
+          key={activeMapConfig.key}
+          title={activeMapConfig.title}
+          points={activeMapConfig.points}
           pointState={pointState}
           getColor={getColor}
           hovered={hovered}

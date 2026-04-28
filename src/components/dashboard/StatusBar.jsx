@@ -1,9 +1,10 @@
 import { motion } from 'framer-motion';
+import { Bell } from 'lucide-react';
 import { useMode } from '@/lib/ModeContext';
 import { MODES as modes } from '@/config/mode';
 import { states } from '@/config/mode';
 
-export default function StatusBar() {
+export default function StatusBar({ onTestNotification }) {
   const { mode, setMode } = useMode();
 
   return (
@@ -41,6 +42,16 @@ export default function StatusBar() {
           </button>
         );
       })}
+      <button
+        onClick={() => void onTestNotification?.()}
+        className="flex items-center gap-2 px-3 py-2 rounded-lg transition-all duration-300 hover:bg-[var(--surface-container-high)]/50 text-muted-foreground hover:text-foreground"
+        title="Проверить уведомления"
+      >
+        <Bell className="w-3.5 h-3.5" />
+        <span className="text-[10px] font-inter font-semibold tracking-[0.08em]">
+          ТЕСТ
+        </span>
+      </button>
     </motion.div>
   );
 }

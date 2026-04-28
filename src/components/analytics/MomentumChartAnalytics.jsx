@@ -3,8 +3,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useMode } from '@/lib/ModeContext';
 import { DEFAULT_MOMENTUM_CHART_ANALYTICS } from '@/lib/mocks';
 import { CHART_HEIGHT } from '@/constants';
-import { filterDefs } from '@/config/metrics'
-import { modeLabelsShort, modeColors} from '@/config/mode'
+import { filterDefs } from '@/config/metrics';
+import { modeColors, modeLabelsShort } from '@/config/mode';
 
 const generateData = (max) => [
   { label: 'ПН',  value: Math.round(max * 0.45), mode: 'СТАБИЛЬНО' },
@@ -16,7 +16,7 @@ const generateData = (max) => [
   { label: 'ВС',  value: 0, mode: null },
 ];
 
-const initialData = Object.fromEntries(filterDefs.map(f => [f.key, generateData(f.max)]));
+const initialData = Object.fromEntries(filterDefs.map((filterDef) => [filterDef.key, generateData(filterDef.max)]));
 
 function InputModal({ day, filter, onSave, onClose }) {
   const [val, setVal] = useState(day.value);
@@ -67,6 +67,7 @@ function InputModal({ day, filter, onSave, onClose }) {
 export default function MomentumChartAnalytics({ data: externalData, onValueChange }) {
   const { modeColor } = useMode();
   const [active, setActive] = useState('focus');
+  const [periodDays, setPeriodDays] = useState(7);
   const [data, setData] = useState(externalData ?? DEFAULT_MOMENTUM_CHART_ANALYTICS ?? initialData);
   const [tooltip, setTooltip] = useState(null);
   const [editing, setEditing] = useState(null);
@@ -75,13 +76,14 @@ export default function MomentumChartAnalytics({ data: externalData, onValueChan
     setData(externalData ?? DEFAULT_MOMENTUM_CHART_ANALYTICS ?? initialData);
   }, [externalData]);
 
-  const days = data[active];
-  const activeFilter = filterDefs.find(f => f.key === active);
+  const days = data[active] ?? [];
+  const visibleDays = periodDays === 7 ? days.slice(-7) : days;
+  const activeFilter = filterDefs.find((filterDef) => filterDef.key === active);
   const barColor = active === 'focus' ? modeColor : activeFilter.color;
-  const maxVal = Math.max(...days.map(d => d.value), 1);
+  const maxVal = Math.max(...visibleDays.map((day) => day.value), 1);
 
   const handleSave = (dayIdx, value) => {
-    onValueChange?.(active, data[active][dayIdx], value);
+    onValueChange?.(active, visibleDays[dayIdx], value);
     setEditing(null);
   };
 
@@ -95,11 +97,27 @@ export default function MomentumChartAnalytics({ data: externalData, onValueChan
       <div className="flex items-start justify-between mb-5 gap-3 flex-wrap">
         <div>
           <span className="text-[10px] font-inter font-semibold tracking-[0.2em] uppercase text-muted-foreground">
-            Динамика за 7 дней
+            Динамика за {periodDays} дней
           </span>
           <p className="text-[10px] text-muted-foreground mt-0.5">Нажмите на столбик чтобы изменить</p>
         </div>
-        <div className="flex flex-wrap items-center gap-1 bg-[var(--surface-container-low)] rounded-lg p-1">
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="flex items-center gap-1 bg-[var(--surface-container-low)] rounded-lg p-1">
+            {[7, 30].map((daysCount) => (
+              <button
+                key={daysCount}
+                onClick={() => setPeriodDays(daysCount)}
+                className={`px-2.5 py-1 rounded-md text-[10px] font-inter font-semibold tracking-wider transition-all duration-300 ${
+                  periodDays === daysCount
+                    ? 'bg-[var(--surface-container-highest)] text-foreground'
+                    : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                {daysCount}д
+              </button>
+            ))}
+          </div>
+          <div className="flex flex-wrap items-center gap-1 bg-[var(--surface-container-low)] rounded-lg p-1">
           {filterDefs.map((f) => (
             <button
               key={f.key}
@@ -112,17 +130,18 @@ export default function MomentumChartAnalytics({ data: externalData, onValueChan
               {f.label}
             </button>
           ))}
+          </div>
         </div>
       </div>
 
       {/* Fixed-height chart for correct proportions */}
       <div className="flex items-end gap-2 relative" style={{ height: CHART_HEIGHT }}>
-        {days.map((day, i) => {
+        {visibleDays.map((day, i) => {
           const barH = day.value > 0 ? (day.value / maxVal) * CHART_HEIGHT : 3;
           const isHov = tooltip?.dayIdx === i;
           return (
             <div
-              key={day.label}
+              key={day.dateKey}
               className="flex-1 flex flex-col items-center justify-end group cursor-pointer h-full"
               onMouseEnter={(e) => {
                 if (day.value > 0) {
@@ -139,7 +158,7 @@ export default function MomentumChartAnalytics({ data: externalData, onValueChan
                 </span>
               )}
               <motion.div
-                key={active + day.label}
+                key={active + day.dateKey + periodDays}
                 initial={{ height: 0 }}
                 animate={{ height: barH }}
                 transition={{ duration: 0.7, delay: i * 0.07, ease: 'easeOut' }}
@@ -158,12 +177,14 @@ export default function MomentumChartAnalytics({ data: externalData, onValueChan
 
       {/* Day labels + mode badges */}
       <div className="flex gap-2 mt-2">
-        {days.map((day, i) => (
-          <div key={day.label} className="flex-1 flex flex-col items-center gap-0.5">
+        {visibleDays.map((day, i) => (
+          <div key={day.dateKey} className="flex-1 flex flex-col items-center gap-0.5">
             <span className={`text-[9px] font-inter font-medium tracking-wider ${day.label === 'СГД' ? 'text-primary' : 'text-muted-foreground'}`}>
-              {day.label}
+              {periodDays === 30
+                ? (i % 5 === 0 || day.label === 'СГД' ? day.shortDateLabel : '·')
+                : day.label}
             </span>
-            {day.mode && (
+            {periodDays === 7 && day.mode && (
               <span
                 className="text-[8px] font-inter font-semibold text-center leading-tight"
                 style={{ color: modeColors[day.mode] }}
@@ -186,7 +207,7 @@ export default function MomentumChartAnalytics({ data: externalData, onValueChan
       </div>
 
       <AnimatePresence>
-        {tooltip && days[tooltip.dayIdx].value > 0 && (
+        {tooltip && visibleDays[tooltip.dayIdx]?.value > 0 && (
           <motion.div
             key={tooltip.dayIdx}
             initial={{ opacity: 0, y: 6 }}
@@ -198,10 +219,10 @@ export default function MomentumChartAnalytics({ data: externalData, onValueChan
           >
             <div className="bg-[var(--surface-container-highest)] border border-[var(--ghost-border)] rounded-lg px-3 py-2 shadow-xl whitespace-nowrap">
               <p className="text-[10px] font-inter font-semibold" style={{ color: barColor }}>
-                {days[tooltip.dayIdx].label} · {activeFilter.label}
+                {(periodDays === 30 ? visibleDays[tooltip.dayIdx].shortDateLabel : visibleDays[tooltip.dayIdx].label)} · {activeFilter.label}
               </p>
               <p className="text-xs font-inter font-bold text-foreground mt-0.5">
-                {days[tooltip.dayIdx].value}{activeFilter.max === 100 ? '%' : ''}
+                {visibleDays[tooltip.dayIdx].value}{activeFilter.max === 100 ? '%' : ''}
               </p>
             </div>
           </motion.div>
@@ -211,7 +232,7 @@ export default function MomentumChartAnalytics({ data: externalData, onValueChan
       <AnimatePresence>
         {editing && (
           <InputModal
-            day={days[editing.dayIdx]}
+            day={visibleDays[editing.dayIdx]}
             filter={activeFilter}
             onSave={(v) => handleSave(editing.dayIdx, v)}
             onClose={() => setEditing(null)}

@@ -24,16 +24,19 @@ function metricToValue(dayData, metricKey) {
 
 export function buildMomentumChartAnalytics(daysByDate, currentDateKey) {
   const keys = METRICS_KEYS;
-  const recentDateKeys = getRecentDateKeys(currentDateKey, 7);
+  const recentDateKeys = getRecentDateKeys(currentDateKey, 30);
 
   return Object.fromEntries(
     keys.map((metricKey) => [
       metricKey,
       recentDateKeys.map((dateKey) => {
         const dayData = daysByDate[dateKey];
+        const [year, month, day] = dateKey.split("-");
+        const shortDateLabel = `${day}.${month}`;
         return {
           dateKey,
           label: getRussianWeekdayLabel(dateKey, dateKey === currentDateKey),
+          shortDateLabel: dateKey === currentDateKey ? "СГД" : shortDateLabel,
           value: metricToValue(dayData, metricKey),
           mode: dayData?.mode ?? null,
         };

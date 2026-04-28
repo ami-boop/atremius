@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { Settings } from 'lucide-react';
-import { DAY_LABELS, MONTH_NAMES } from '../../constants';
 import { DAY_LABELS as dayNames, MONTH_NAMES as monthNames } from '../../constants';
 
 export default function Navbar() {

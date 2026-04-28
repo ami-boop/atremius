@@ -1,4 +1,4 @@
-import { KFAR_TAVOR_FALLBACK, OPEN_METEO_URL, SARATOV_FALLBACK } from "../constants/weather";
+import { KFAR_TAVOR_FALLBACK, OPEN_WEATHER_URL, SARATOV_FALLBACK } from "../constants/weather";
 
 function weatherCodeToType(code) {
   if (code === 0) return "солнечно";
@@ -11,6 +11,34 @@ function weatherCodeToType(code) {
   if ([71, 73, 75, 77, 85, 86].includes(code)) return "снег";
   if ([95, 96, 99].includes(code)) return "гроза";
   return "облачно";
+}
+
+function openWeatherToMeteoCode(openWeatherCode) {
+  if (openWeatherCode === 800) return 0;
+  if (openWeatherCode === 801) return 1;
+  if (openWeatherCode === 802) return 2;
+  if ([803, 804].includes(openWeatherCode)) return 3;
+
+  if ([701, 711, 721, 731, 741, 751, 761, 762].includes(openWeatherCode)) return 45;
+
+  if ([300, 301, 302, 310, 311, 312, 313, 314, 321].includes(openWeatherCode)) return 53;
+  if ([500, 501].includes(openWeatherCode)) return 61;
+  if ([502, 503].includes(openWeatherCode)) return 63;
+  if ([504].includes(openWeatherCode)) return 65;
+  if ([511].includes(openWeatherCode)) return 67;
+  if ([520, 521].includes(openWeatherCode)) return 80;
+  if ([522, 531].includes(openWeatherCode)) return 82;
+
+  if ([600, 601].includes(openWeatherCode)) return 71;
+  if ([602].includes(openWeatherCode)) return 75;
+  if ([611, 612, 613].includes(openWeatherCode)) return 77;
+  if ([615, 616].includes(openWeatherCode)) return 85;
+  if ([620, 621].includes(openWeatherCode)) return 73;
+  if ([622].includes(openWeatherCode)) return 86;
+
+  if ([200, 201, 202, 210, 211, 212, 221, 230, 231, 232].includes(openWeatherCode)) return 95;
+
+  return 3;
 }
 
 function getCurrentPosition() {
@@ -73,54 +101,60 @@ export async function resolveWeatherLocation(profile) {
 }
 
 export async function fetchWeatherForecast(location) {
+  const apiKey = import.meta.env.OPEN_WEATHER_API_KEY || import.meta.env.VITE_OPEN_WEATHER_API_KEY;
+  if (!apiKey) {
+    throw new Error("OPEN_WEATHER_API_KEY is missing");
+  }
+
   const params = new URLSearchParams({
-    latitude: String(location.latitude),
-    longitude: String(location.longitude),
-    daily: "weather_code,temperature_2m_max,temperature_2m_min",
-    timezone: location.timezone || "auto",
-    forecast_days: "8",
+    lat: String(location.latitude),
+    lon: String(location.longitude),
+    appid: apiKey,
+    units: "metric",
+    lang: "ru",
+    exclude: "current,minutely,hourly,alerts",
   });
 
-  const response = await fetch(`${OPEN_METEO_URL}?${params.toString()}`);
+  const response = await fetch(`${OPEN_WEATHER_URL}?${params.toString()}`);
   if (!response.ok) {
     throw new Error(`Weather API request failed with status ${response.status}`);
   }
 
   const data = await response.json();
-  const daily = data.daily;
+  const daily = data.daily ?? [];
 
-  if (!daily?.time?.length) {
+  if (!daily.length) {
     throw new Error("Weather API returned no daily forecast");
   }
 
-  const allDays = daily.time.map((date, index) => {
-    const weatherCode = daily.weather_code[index];
-    const weatherTemp = Math.round(
-      ((daily.temperature_2m_max[index] ?? 0) + (daily.temperature_2m_min[index] ?? 0)) / 2,
-    );
+  const allDays = daily.map((day) => {
+    const openWeatherCode = day.weather?.[0]?.id ?? 804;
+    const weatherCode = openWeatherToMeteoCode(openWeatherCode);
+    const weatherTemp = Math.round(((day.temp?.max ?? 0) + (day.temp?.min ?? 0)) / 2);
+    const date = new Date((day.dt ?? 0) * 1000).toISOString().slice(0, 10);
 
     return {
       date,
       weather_temp: weatherTemp,
       weather_type: weatherCodeToType(weatherCode),
       weather_code: weatherCode,
-      weather_temp_max: daily.temperature_2m_max[index],
-      weather_temp_min: daily.temperature_2m_min[index],
+      weather_temp_max: day.temp?.max ?? 0,
+      weather_temp_min: day.temp?.min ?? 0,
     };
   });
 
   const days = allDays.slice(1, 8);
 
   return {
-    source: "open-meteo",
+    source: "open-weather",
     generatedAt: new Date().toISOString(),
     location,
     days,
     comment:
       location.source === "geolocation"
-        ? "Погода получена по текущей геолокации через Open-Meteo."
+        ? "Погода получена по текущей геолокации через OpenWeather."
         : location.source === "manual"
-          ? `Погода получена для ${location.name} через Open-Meteo.`
-          : `Геолокация недоступна, поэтому использован прогноз для ${location.name} через Open-Meteo.`,
+          ? `Погода получена для ${location.name} через OpenWeather.`
+          : `Геолокация недоступна, поэтому использован прогноз для ${location.name} через OpenWeather.`,
   };
 }
