@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useState } from 'react';
 import Navbar from '../components/dashboard/Navbar';
 import CurrentTaskCard from '../components/dashboard/CurrentTaskCard';
 import CircadianAnchor from '../components/dashboard/CircadianAnchor';
@@ -7,123 +7,35 @@ import HabitsTracker from '../components/dashboard/HabitsTracker';
 import StatusBar from '../components/dashboard/StatusBar';
 import BottomNav from '../components/dashboard/BottomNav';
 import AnalyticsTab from '../components/analytics/AnalyticsTab';
-import { useMode } from '@/lib/ModeContext';
-import { DEFAULT_PROFILE, createDefaultDay } from '@/lib/mocks';
-import { buildMomentumChartAnalytics } from '@/lib/analytics';
-import { loadDashboardData, saveDayPatch, saveProfilePatch } from '@/lib/dashboard/firestoreDashboard';
-import { triggerTestNotification, useDashboardNotifications } from '@/lib/dashboard/useDashboardNotifications';
-import {
-  buildDayStateForDate,
-  buildPatchedDayState,
-  patchVitalityByMetric,
-  toggleFocusBlockSubtask,
-} from '@/lib/dashboard/dayMutations';
+import { useDashboardData } from '@/hooks/useDashboardData';
+import { sendNotification, isPermissionGranted, requestPermission } from "@tauri-apps/plugin-notification";
 
 export default function Dashboard() {
-  const { mode, setMode } = useMode();
   const [activeTab, setActiveTab] = useState('dashboard');
-  const [loading, setLoading] = useState(true);
-  const [profile, setProfile] = useState(DEFAULT_PROFILE);
-  const [dateKey, setDateKey] = useState(DEFAULT_PROFILE.activeDate);
-  const [dayData, setDayData] = useState(createDefaultDay(DEFAULT_PROFILE.activeDate));
-  const [daysByDate, setDaysByDate] = useState(
-    {
-      [DEFAULT_PROFILE.activeDate]: createDefaultDay(DEFAULT_PROFILE.activeDate),
-    }
-  );
-  const [hasLoadedDay, setHasLoadedDay] = useState(false);
+  const {
+    analyticsData,
+    dateKey,
+    dayData,
+    daysByDate,
+    handleMomentumChartValueChange,
+    handleToggleSubtask,
+    loading,
+    persistDayPatch,
+    persistProfilePatch,
+    profile,
+  } = useDashboardData();
 
-  const analyticsData = useMemo(
-    () => buildMomentumChartAnalytics(daysByDate, dateKey),
-    [daysByDate, dateKey],
-  );
-  useDashboardNotifications({ profile, dayData, dateKey });
-
-  useEffect(() => {
-    const loadData = async () => {
-      setLoading(true);
-      setHasLoadedDay(false);
-      try {
-        const dashboardData = await loadDashboardData();
-        setProfile(dashboardData.profile);
-        setDateKey(dashboardData.dateKey);
-        setDayData(dashboardData.dayData);
-        setDaysByDate(dashboardData.daysByDate);
-        setMode(dashboardData.dayData.mode);
-        setHasLoadedDay(true);
-      } catch (error) {
-        console.error('Failed to load Firestore dashboard data', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    void loadData();
-  }, [setMode]);
-
-  const persistProfilePatch = async (patch) => {
-    const updatedAt = new Date().toISOString();
-    const nextProfile = {
-      ...profile,
-      ...patch,
-      updatedAt,
-    };
-    setProfile(nextProfile);
-
-    try {
-      await saveProfilePatch(patch, updatedAt);
-    } catch (error) {
-      console.error('Failed to persist Firestore profile patch', error);
-    }
-  };
-
-  const persistDayPatch = async (targetDateKey, patch) => {
-    const updatedAt = new Date().toISOString();
-    const previousDayData = buildDayStateForDate({
-      targetDateKey,
-      currentDateKey: dateKey,
-      dayData,
-      daysByDate,
-    });
-    const nextDayData = buildPatchedDayState(previousDayData, targetDateKey, patch, updatedAt);
-
-    setDaysByDate((prev) => ({
-      ...prev,
-      [targetDateKey]: nextDayData,
-    }));
-
-    if (targetDateKey === dateKey) {
-      setDayData(nextDayData);
-    }
-
-    try {
-      await saveDayPatch(targetDateKey, patch, updatedAt);
-    } catch (error) {
-      console.error('Failed to persist Firestore day patch', error);
-    }
-  };
-
-  useEffect(() => {
-    if (!hasLoadedDay || mode === dayData.mode) return;
-    void persistDayPatch(dateKey, { mode });
-  }, [dateKey, dayData.mode, hasLoadedDay, mode]);
-
-  const handleToggleSubtask = (blockId, subtaskId) => {
-    const nextFocusBlocks = toggleFocusBlockSubtask(dayData.focusBlocks, blockId, subtaskId);
-    void persistDayPatch(dateKey, { focusBlocks: nextFocusBlocks });
-  };
-
-  const handleMomentumChartValueChange = (metricKey, dayItem, value) => {
-    const targetDateKey = dayItem.dateKey;
-    const targetDay = buildDayStateForDate({
-      targetDateKey,
-      currentDateKey: dateKey,
-      dayData,
-      daysByDate,
-    });
-    const vitalityPatch = patchVitalityByMetric(targetDay.vitality, metricKey, value);
-    void persistDayPatch(targetDateKey, { vitality: vitalityPatch });
-  };
+  const triggerTestNotification = async () => {
+  let permissionGranted = await isPermissionGranted();
+  if (!permissionGranted) {
+    const permission = await requestPermission();
+    permissionGranted = permission === 'granted';
+  }
+  if (permissionGranted) {
+    sendNotification('Tauri is awesome!');
+    sendNotification({ title: 'TAURI', body: 'Tauri is awesome!' });
+  }
+  }
 
   return (
     <div className="min-h-screen bg-[var(--surface)] font-inter pb-32">

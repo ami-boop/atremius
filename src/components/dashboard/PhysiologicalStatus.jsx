@@ -90,7 +90,13 @@ function BodyMapSection({
   );
 }
 
-export default function PhysiologicalStatus({ pointState: externalPointState, onChange, daysByDate, currentDateKey }) {
+export default function PhysiologicalStatus({
+  pointState: externalPointState,
+  onChange,
+  daysByDate,
+  currentDateKey,
+  forecast,
+}) {
   const { modeColor } = useMode();
   const [pointState, setPointState] = useState(externalPointState ?? DEFAULT_PHYSIOLOGY);
   const [selected, setSelected] = useState(null);
@@ -102,6 +108,12 @@ export default function PhysiologicalStatus({ pointState: externalPointState, on
     () => buildBodyInsights(daysByDate ?? {}, currentDateKey, pointState),
     [currentDateKey, daysByDate, pointState],
   );
+  const bodyRecommendations = forecast?.bodyRecommendations?.length
+    ? forecast.bodyRecommendations
+    : bodyInsights.bodyRecommendations;
+  const activityRecommendations = forecast?.activityRecommendations?.length
+    ? forecast.activityRecommendations
+    : bodyInsights.activityRecommendations;
 
   useEffect(() => {
     setPointState(externalPointState ?? DEFAULT_PHYSIOLOGY);
@@ -237,7 +249,7 @@ export default function PhysiologicalStatus({ pointState: externalPointState, on
             Рекомендации по телу
           </p>
           <div className="space-y-1.5">
-            {bodyInsights.bodyRecommendations.map((item) => (
+            {bodyRecommendations.map((item) => (
               <p key={item} className="text-[11px] font-inter text-muted-foreground leading-relaxed">
                 • {item}
               </p>
@@ -249,7 +261,7 @@ export default function PhysiologicalStatus({ pointState: externalPointState, on
             Рекомендации по активности
           </p>
           <div className="space-y-1.5">
-            {bodyInsights.activityRecommendations.map((item) => (
+            {activityRecommendations.map((item) => (
               <p key={item} className="text-[11px] font-inter text-muted-foreground leading-relaxed">
                 • {item}
               </p>

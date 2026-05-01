@@ -33,6 +33,7 @@ export default function AnalyticsTab({
           onChange={onPhysiologyChange}
           daysByDate={daysByDate}
           currentDateKey={currentDateKey}
+          forecast={forecast}
         />
         <VitalityInput
           values={vitality}

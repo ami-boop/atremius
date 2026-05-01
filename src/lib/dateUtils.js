@@ -18,12 +18,7 @@ export function addDaysToDateKey(dateKey, days) {
 }
 
 export function getTodayDateKey(timezone = "Europe/Saratov", rolloverHour = 3) {
-  const hourFormatter = new Intl.DateTimeFormat("en-US", {
-    timeZone: timezone,
-    hour: "2-digit",
-    hour12: false,
-  });
-  const localHour = Number(hourFormatter.format(new Date()));
+  const localHour = getLocalHour(timezone);
   const baseDate = new Date();
 
   // Before rollover hour we still treat the day as "yesterday".
@@ -55,4 +50,19 @@ export function getRussianWeekdayLabel(dateKey, isToday = false) {
 
   const labels = DAY_LABELS
   return labels[parseDateKey(dateKey).getUTCDay()];
+}
+
+export function getLocalHour(timezone = "Europe/Saratov", date = new Date()) {
+  const hourFormatter = new Intl.DateTimeFormat("en-US", {
+    timeZone: timezone,
+    hour: "2-digit",
+    hour12: false,
+  });
+
+  return Number(hourFormatter.format(date));
+}
+
+export function getForecastRunSlot(timezone = "Europe/Saratov", date = new Date()) {
+  const localHour = getLocalHour(timezone, date);
+  return localHour >= 20 ? "evening" : "morning";
 }

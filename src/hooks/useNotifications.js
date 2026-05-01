@@ -1,7 +1,9 @@
 import { useEffect } from 'react';
 import { getTodayDateKey } from '@/lib/dateUtils';
+import { isPermissionGranted, sendNotification, requestPermission } from '@tauri-apps/plugin-notification';
 
 const FOCUS_NOTIFICATION_PREFIX = 'focus-block-ended';
+const FOCUS_START_NOTIFICATION_PREFIX = 'focus-block-started';
 const SLEEP_NOTIFICATION_PREFIX = 'sleep-reminder';
 const SLEEP_REMINDER_LEAD_MINUTES = 30;
 const NOTIFICATION_TICK_MS = 30000;
@@ -37,12 +39,12 @@ function markAsSent(key) {
 async function showNotification(title, body) {
   if (typeof window === 'undefined' || !('Notification' in window)) return;
 
-  if (Notification.permission === 'default') {
-    await Notification.requestPermission();
+  if (!isPermissionGranted()) {
+    await requestPermission();
   }
-  if (Notification.permission !== 'granted') return;
-
-  new Notification(title, { body });
+  else {
+    sendNotification({ title, body });
+  }
 }
 
 export async function triggerTestNotification() {
@@ -65,6 +67,18 @@ export function useDashboardNotifications({ profile, dayData, dateKey }) {
         const startMinutes = parseTimeToMinutes(block.time);
         const durationMinutes = Number(block.duration);
         if (startMinutes === null || Number.isNaN(durationMinutes)) continue;
+
+        // 🔔 Notify when block starts
+        if (nowMinutes >= startMinutes) {
+          const startEventKey = `${FOCUS_START_NOTIFICATION_PREFIX}:${dateKey}:${block.id}:${startMinutes}`;
+          if (!wasAlreadySent(startEventKey)) {
+            await showNotification(
+              'Фокус-блок начался',
+              `Блок "${block.title}" только что начался. Время сосредоточиться.`
+            );
+            markAsSent(startEventKey);
+          }
+        }
 
         const endMinutes = startMinutes + durationMinutes;
         if (nowMinutes < endMinutes) continue;

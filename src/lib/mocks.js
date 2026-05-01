@@ -133,6 +133,8 @@ export const DEFAULT_MOMENTUM_CHART_ANALYTICS = {
 };
 
 export const DEFAULT_FORECAST = {
+  forecastDateKey: DEFAULT_PROFILE.activeDate,
+  slot: "morning",
   days: [
     { focus_score: 62, work_mode: "СТАБИЛЬНО", weather_temp: 14, weather_type: "облачно", recommendation: "Держи умеренный темп и оставь резерв на переключения." },
     { focus_score: 74, work_mode: "ПРОДУКТИВНОСТЬ", weather_temp: 16, weather_type: "солнечно", recommendation: "Планируй сложные задачи на первую половину дня." },
@@ -145,6 +147,12 @@ export const DEFAULT_FORECAST = {
   recommendations: [
     "Ставь сложные задачи на более ясные дни.",
     "При падении сна и активности уменьши число тяжёлых блоков.",
+  ],
+  bodyRecommendations: [
+    "Сохраняй ровную нагрузку и не перегружай проблемные зоны, если появятся сигналы по телу.",
+  ],
+  activityRecommendations: [
+    "Держи умеренную ежедневную активность без резких скачков объёма.",
   ],
   comment: "Прогноз производительности строится локальным алгоритмом по погоде и динамике последних дней.",
 };

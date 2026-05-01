@@ -3,23 +3,50 @@ import { motion } from 'framer-motion';
 import { useMode } from '@/lib/ModeContext';
 import { CloudSun, Loader2 } from 'lucide-react';
 import { DEFAULT_FORECAST } from '@/lib/mocks';
+import { generateProductivityForecast } from '@/api/forecastAi';
 import { fetchWeatherForecast, resolveWeatherLocation } from '@/api/weather';
-import { buildProductivityForecast } from '@/lib/forecastEngine';
-import { DAY_LABELS} from '@/constants'
-import { modeLabelsShort, modeColors} from '@/config/mode'
+import { getForecastRunSlot } from '@/lib/dateUtils';
+import { DAY_LABELS } from '@/constants';
+import { modeLabelsShort, modeColors } from '@/config/mode';
 
-const nextDays = () => {
-  const days = DAY_LABELS
+function getNextDayLabels() {
   const result = [];
   const now = new Date();
+
   for (let i = 1; i <= 7; i++) {
     const d = new Date(now);
     d.setDate(now.getDate() + i);
-    result.push({ label: days[d.getDay()] });
+    result.push({ label: DAY_LABELS[d.getDay()] });
   }
-  return result;
-};
 
+  return result;
+}
+
+function getForecastErrorMessage(error) {
+  return error.message || 'Не удалось получить прогноз погоды.';
+}
+
+function isForecastFreshForCurrentSlot(forecast, currentDateKey, timezone) {
+  if (!forecast) return false;
+
+  return (
+    forecast.forecastDateKey === currentDateKey &&
+    forecast.slot === getForecastRunSlot(timezone)
+  );
+}
+
+function doesForecastMatchLocation(forecast, selectedWeatherLocation) {
+  if (selectedWeatherLocation === 'auto') return forecast?.location?.source === 'geolocation';
+  return forecast?.location?.id === selectedWeatherLocation;
+}
+
+function getWeatherIcon(type) {
+  const normalizedType = (type || '').toLowerCase();
+  if (normalizedType.includes('дождь') || normalizedType.includes('rain')) return '🌧';
+  if (normalizedType.includes('снег') || normalizedType.includes('snow')) return '❄️';
+  if (normalizedType.includes('облач') || normalizedType.includes('cloud')) return '☁️';
+  return '☀️';
+}
 
 export default function ForecastChart({
   forecast: externalForecast,
@@ -31,9 +58,11 @@ export default function ForecastChart({
 }) {
   const { modeColor } = useMode();
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
   const [forecast, setForecast] = useState(externalForecast ?? DEFAULT_FORECAST);
   const [hasAutoLoaded, setHasAutoLoaded] = useState(false);
-  const days = nextDays();
+  const days = useMemo(getNextDayLabels, []);
+  const appTimezone = profile?.timezone ?? 'Europe/Saratov';
   const weatherLocationOptions = useMemo(
     () => [
       { id: 'auto', name: 'Текущая геолокация' },
@@ -53,18 +82,22 @@ export default function ForecastChart({
 
   const loadForecast = async () => {
     setLoading(true);
+    setError('');
     try {
       const location = await resolveWeatherLocation(profile);
       const weatherForecast = await fetchWeatherForecast(location);
-      const nextForecast = buildProductivityForecast({
+      const nextForecast = await generateProductivityForecast({
         daysByDate,
         currentDateKey,
         weatherForecast,
         location,
+        profile,
       });
 
       setForecast(nextForecast);
       onChange?.(nextForecast);
+    } catch (nextError) {
+      setError(getForecastErrorMessage(nextError));
     } finally {
       setLoading(false);
     }
@@ -73,32 +106,20 @@ export default function ForecastChart({
   useEffect(() => {
     if (hasAutoLoaded) return;
 
-    const generatedAt = forecast?.generatedAt ? new Date(forecast.generatedAt) : null;
-    const isFreshToday = generatedAt ? generatedAt.toDateString() === new Date().toDateString() : false;
-    const locationMatchesSelection =
-      selectedWeatherLocation === 'auto'
-        ? forecast?.location?.source === 'geolocation'
-        : forecast?.location?.id === selectedWeatherLocation;
-
-    if (isFreshToday && locationMatchesSelection) {
+    if (
+      isForecastFreshForCurrentSlot(forecast, currentDateKey, appTimezone) &&
+      doesForecastMatchLocation(forecast, selectedWeatherLocation)
+    ) {
       setHasAutoLoaded(true);
       return;
     }
 
     setHasAutoLoaded(true);
     void loadForecast();
-  }, [currentDateKey, daysByDate, forecast, hasAutoLoaded, selectedWeatherLocation]);
-
-  const weatherIcon = (type) => {
-    const t = (type || '').toLowerCase();
-    if (t.includes('дождь') || t.includes('rain')) return '🌧';
-    if (t.includes('снег') || t.includes('snow')) return '❄️';
-    if (t.includes('облач') || t.includes('cloud')) return '☁️';
-    return '☀️';
-  };
+  }, [appTimezone, currentDateKey, daysByDate, forecast, hasAutoLoaded, selectedWeatherLocation]);
 
   const visibleDays = forecast?.days?.slice(0, 7) ?? DEFAULT_FORECAST.days;
-  const maxScore = Math.max(...visibleDays.map(d => d.focus_score), 1);
+  const maxScore = Math.max(...visibleDays.map((day) => day.focus_score), 1);
 
   return (
     <motion.div
@@ -149,6 +170,12 @@ export default function ForecastChart({
 
       {!loading && forecast && (
         <>
+          {error && (
+            <p className="text-[11px] font-inter text-red-400 mb-4 leading-relaxed bg-red-500/10 rounded-lg px-3 py-2">
+              Не удалось обновить погоду: {error}
+            </p>
+          )}
+
           {forecast.comment && (
             <p className="text-[11px] font-inter text-muted-foreground mb-4 leading-relaxed bg-[var(--surface-container-low)] rounded-lg px-3 py-2">
               💡 {forecast.comment}
@@ -186,7 +213,7 @@ export default function ForecastChart({
               return (
                 <div key={i} className="flex-1 flex flex-col items-center gap-0.5">
                   <span className="text-[9px] font-inter font-medium text-muted-foreground">{d.label}</span>
-                  <span className="text-sm leading-none">{weatherIcon(day.weather_type)}</span>
+                  <span className="text-sm leading-none">{getWeatherIcon(day.weather_type)}</span>
                   <span className="text-[9px] font-inter text-muted-foreground">{Math.round(day.weather_temp)}°</span>
                   {dm && (
                     <span className="text-[8px] font-inter font-semibold mt-0.5 text-center leading-tight" style={{ color: barCol }}>
@@ -224,7 +251,7 @@ export default function ForecastChart({
           )}
 
           <p className="text-[9px] font-inter text-muted-foreground/40 mt-3">
-            * Погода получена из Open-Meteo, производительность и режим рассчитаны локальным алгоритмом по истории 7 и 30–40 дней
+            * Погода берётся из OpenWeather с fallback на Open-Meteo, а прогноз и рекомендации генерируются через OpenRouter утром и вечером
           </p>
         </>
       )}

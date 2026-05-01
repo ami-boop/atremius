@@ -501,6 +501,8 @@ export function buildProductivityForecast({ daysByDate, currentDateKey, weatherF
     location,
     days: forecastDays,
     recommendations: buildWeeklyRecommendations(historyContext, weatherContext, forecastDays),
+    bodyRecommendations: bodyInsights.bodyRecommendations,
+    activityRecommendations: bodyInsights.activityRecommendations,
     comment: buildForecastComment(historyContext, weatherContext, location, bodyInsights),
   };
 }
